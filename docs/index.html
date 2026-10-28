@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COT Panel</title>
+<meta name="description" content="EURUSD, GBPUSD, XAUUSD, XAGUSD, Nasdaq ve S&P 500 için COT, open interest, makro, volatilite, likidite ve sentiment paneli.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo">COT</div>
+    <div>
+      <h1>COT Panel</h1>
+      <p class="sub" id="lastUpdate">Yükleniyor…</p>
+    </div>
+  </div>
+  <button class="badge" id="validationBadge" data-tab="validation">Doğrulama</button>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="overview" class="active">Özet</button>
+  <button data-tab="instruments">Enstrümanlar</button>
+  <button data-tab="macro">Makro</button>
+  <button data-tab="vol">Volatilite</button>
+  <button data-tab="liquidity">Likidite</button>
+  <button data-tab="sentiment">Sentiment</button>
+  <button data-tab="stats">İstatistik</button>
+  <button data-tab="validation">Veri Doğrulama</button>
+</nav>
+
+<main>
+  <section id="tab-overview" class="tab active"></section>
+  <section id="tab-instruments" class="tab"></section>
+  <section id="tab-macro" class="tab"></section>
+  <section id="tab-vol" class="tab"></section>
+  <section id="tab-liquidity" class="tab"></section>
+  <section id="tab-sentiment" class="tab"></section>
+  <section id="tab-stats" class="tab"></section>
+  <section id="tab-validation" class="tab"></section>
+</main>
+
+<footer>
+  Veri: CFTC (Futures Only), Yahoo Finance, Stooq, FRED, ECB, CBOE, AAII. COT verisi her cuma güncellenir, salı gününün pozisyonlarını gösterir.<br>
+  Eğitim ve araştırma amaçlıdır, yatırım tavsiyesi değildir.
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
