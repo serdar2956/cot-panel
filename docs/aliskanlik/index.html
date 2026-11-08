@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alışkanlık Takibi</title>
+<meta name="description" content="Aylık alışkanlık takibi: günlük işaretleme, ilerleme, analiz, ruh hali ve motivasyon.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f1e; --panel:#131a2e; --panel2:#182039; --line:#232c4a;
+  --text:#e7eaf6; --muted:#8a93b4; --dim:#5b6488;
+  --w1:#6c5cf5; --w2:#4a7dff; --w3:#2fc6d4; --w4:#f0549a; --w5:#35d38a;
+  --bar-hi:#f5c542; --bar-mid:#f08a3c; --bar-lo:#e8504f;
+  --mood:#c9cfe8; --motiv:#6c8cff;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1200px 600px at 10% -10%,#1a1f45 0%,transparent 60%),var(--bg);color:var(--text);
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:13px;min-height:100vh}
+.wrap{max-width:1500px;margin:0 auto;padding:20px 16px 48px}
+button{font:inherit;color:inherit;cursor:pointer}
+
+/* header */
+.head{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:stretch;margin-bottom:16px}
+.month{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:14px}
+.month h1{margin:0;font-size:26px;font-weight:700;letter-spacing:-.02em;min-width:110px}
+.month small{display:block;color:var(--muted);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+.nav{display:flex;gap:6px}
+.nav button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--panel2)}
+.nav button:hover{border-color:var(--w1)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 16px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.stat .k{color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.stat .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.pbar{height:14px;border-radius:7px;background:#0d1226;border:1px solid var(--line);overflow:hidden}
+.pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--bar-lo),var(--bar-mid),var(--bar-hi));transition:width .3s}
+
+/* layout */
+.row{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;margin-bottom:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+.card h2{margin:0 0 10px;font-size:15px;font-weight:700;letter-spacing:-.01em}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* grid table */
+table.grid{border-collapse:separate;border-spacing:0;width:100%;min-width:820px}
+.grid th,.grid td{padding:0;text-align:center}
+.grid .name{text-align:left;padding:0 10px 0 2px;white-space:nowrap;font-weight:500;position:sticky;left:0;background:var(--panel);z-index:1;min-width:150px}
+.grid .wk th{font-size:11px;font-weight:700;color:#fff;height:24px}
+.grid .wk th.w{border-radius:6px 6px 0 0}
+.grid .dn th,.grid .dd th{font-size:10px;color:var(--muted);font-weight:600;height:16px}
+.grid .dd th{color:var(--text);padding-bottom:6px}
+.grid th.today,.grid td.today{background:rgba(255,255,255,.04)}
+.grid .dd th.today{color:#fff}
+.grid .dd th.today span{background:var(--w1);border-radius:4px;padding:0 4px}
+.grid tbody td{height:26px}
+.cb{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--c);background:transparent;display:inline-grid;place-items:center;padding:0;transition:background .12s,transform .08s}
+.cb:hover{transform:scale(1.12)}
+.cb.on{background:var(--c)}
+.cb.on::after{content:"";width:5px;height:9px;border:solid #0b0f1e;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.grid tfoot td{font-size:10px;color:var(--muted);height:18px;font-variant-numeric:tabular-nums}
+.grid tfoot tr:first-child td{padding-top:8px;border-top:1px solid var(--line)}
+.grid tfoot .name{color:var(--muted);font-size:11px;font-weight:600}
+.grid tfoot td.pc{color:var(--text);font-weight:600}
+.grid select{appearance:none;-webkit-appearance:none;background:transparent;border:0;color:var(--text);font:inherit;font-size:11px;width:22px;text-align:center;text-align-last:center;cursor:pointer;padding:3px 0;border-radius:4px}
+.grid select:hover,.grid select:focus{background:var(--panel2);outline:none}
+.grid select.empty{color:var(--dim)}
+.lock{font-size:11px;opacity:.6}
+
+/* analysis */
+.ana{display:flex;flex-direction:column;gap:9px}
+.ana .r{display:grid;grid-template-columns:120px 1fr 52px;align-items:center;gap:8px}
+.ana .r span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ana .t{height:12px;background:#0d1226;border-radius:3px;overflow:hidden}
+.ana .t i{display:block;height:100%;border-radius:3px;transition:width .3s}
+.ana .p{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.ana .sub{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-top:6px}
+
+/* charts */
+.chart{width:100%;height:190px;display:block}
+.legend{display:flex;gap:14px;color:var(--muted);font-size:11px;margin-bottom:6px}
+.legend b{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+
+.foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;color:var(--dim);font-size:11px}
+.foot button{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:12px}
+.foot button:hover{border-color:var(--w1)}
+
+@media (max-width:1100px){.row{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){
+  .head{grid-template-columns:minmax(0,1fr)}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .month{justify-content:space-between}
+  .grid .name{min-width:118px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <div class="month">
+      <div><h1 id="mName">—</h1><small>Alışkanlık Takibi · <span id="yName"></span></small></div>
+      <div class="nav"><button id="prev" aria-label="Önceki ay">‹</button><button id="next" aria-label="Sonraki ay">›</button></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="k">Alışkanlık sayısı</span><span class="v" id="sCount">0</span></div>
+      <div class="stat"><span class="k">Tamamlanan</span><span class="v" id="sDone">0</span></div>
+      <div class="stat"><span class="k">İlerleme</span><div class="pbar"><i id="sBar"></i></div></div>
+      <div class="stat"><span class="k">İlerleme %</span><span class="v" id="sPct">0%</span></div>
+    </div>
+  </header>
+
+  <section class="row">
+    <div class="card">
+      <h2>Aktivitelerim</h2>
+      <div class="scroll"><table class="grid" id="habitGrid"></table></div>
+    </div>
+    <div class="card">
+      <h2>Analiz</h2>
+      <div class="ana" id="habitAna"></div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-bottom:16px">
+    <h2>Günlük ilerleme</h2>
+    <svg class="chart" id="dailyChart"></svg>
+  </section>
+
+  <section class="row">
+    <div class="card">
+      <h2>Ruh Hali</h2>
+      <div class="scroll"><table class="grid" id="moodGrid"></table></div>
+      <div class="legend" style="margin-top:12px"><span><b style="background:var(--mood)"></b>Ruh hali</span><span><b style="background:var(--motiv)"></b>Motivasyon</span></div>
+      <svg class="chart" id="moodChart"></svg>
+    </div>
+    <div class="card">
+      <h2>Analiz</h2>
+      <div class="ana" id="moodAna"></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Veriler bu tarayıcıda saklanır. Cihaz değiştirirken yedeği dışa aktar, sonra içe aktar.</span>
+    <span style="display:flex;gap:8px">
+      <button id="exp">Yedeği indir</button>
+      <button id="imp">Yedeği yükle</button>
+      <input type="file" id="impFile" accept="application/json" hidden>
+    </span>
+  </footer>
+</div>
+
+<script>
+// ---- Ayarlar: aktivite listesi ----
+const HABITS = [
+  { id: "kcal",    name: "1000 kcal açık",   icon: "🔥" },
+  { id: "kitap",   name: "Kitap okuma",      icon: "📚" },
+  { id: "spor",    name: "Spor",             icon: "💪" },
+  { id: "quant",   name: "Quant çalışma",    icon: "📈" },
+  { id: "yazilim", name: "Yazılım çalışma",  icon: "💻" },
+  { id: "ders",    name: "Ders çalışma",     icon: "📖" },
+  { id: "lmx",     name: "LMX",              icon: "🔒" },
+  { id: "su",      name: "3 litre su",       icon: "💧" },
+];
+const MONTHS = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const DAYS = ["Pz","Pt","Sa","Ça","Pe","Cu","Ct"];
+const WEEK_COLORS = ["--w1","--w2","--w3","--w4","--w5"].map(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim());
+const KEY = "aliskanlik:v1";
+
+let store = {};
+try { store = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { store = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} };
+
+const now = new Date();
+let Y = now.getFullYear(), M = now.getMonth();
+const $ = id => document.getElementById(id);
+const mkey = () => `${Y}-${String(M + 1).padStart(2, "0")}`;
+const dim = () => new Date(Y, M + 1, 0).getDate();
+const month = () => {
+  const k = mkey();
+  store[k] ??= { checks: {}, mood: {}, motiv: {} };
+  return store[k];
+};
+const weekOf = d => Math.floor((d - 1) / 7);
+const isToday = d => Y === now.getFullYear() && M === now.getMonth() && d === now.getDate();
+const pct = (a, b) => b ? (a / b) * 100 : 0;
+const fmt = v => v.toFixed(v >= 10 || v === 0 ? 0 : 1) + "%";
+
+function headRows(n) {
+  let wk = `<tr class="wk"><th class="name"></th>`;
+  for (let w = 0; w * 7 < n; w++) {
+    const span = Math.min(7, n - w * 7);
+    wk += `<th class="w" colspan="${span}" style="background:${WEEK_COLORS[w]}">Hafta ${w + 1}</th>`;
+  }
+  let dn = `<tr class="dn"><th class="name"></th>`, dd = `<tr class="dd"><th class="name"></th>`;
+  for (let d = 1; d <= n; d++) {
+    const t = isToday(d) ? ' class="today"' : "";
+    dn += `<th${t}>${DAYS[new Date(Y, M, d).getDay()]}</th>`;
+    dd += `<th${t}><span>${d}</span></th>`;
+  }
+  return `<thead>${wk}</tr>${dn}</tr>${dd}</tr></thead>`;
+}
+
+function renderHabitGrid() {
+  const n = dim(), m = month();
+  let body = "<tbody>";
+  for (const h of HABITS) {
+    const set = new Set(m.checks[h.id] || []);
+    body += `<tr><td class="name">${h.name} <span>${h.icon}</span></td>`;
+    for (let d = 1; d <= n; d++) {
+      body += `<td${isToday(d) ? ' class="today"' : ""}><button class="cb${set.has(d) ? " on" : ""}" style="--c:${WEEK_COLORS[weekOf(d)]}" data-h="${h.id}" data-d="${d}" aria-label="${h.name} ${d}"></button></td>`;
+    }
+    body += "</tr>";
+  }
+  body += "</tbody><tfoot>";
+  const rows = [["İlerleme", "pc"], ["Tamamlanan", ""], ["Kalan", ""]];
+  const daily = dailyCounts();
+  rows.forEach(([label, cls], i) => {
+    body += `<tr><td class="name">${label}</td>`;
+    for (let d = 1; d <= n; d++) {
+      const c = daily[d - 1];
+      const v = i === 0 ? fmt(pct(c, HABITS.length)) : i === 1 ? c : HABITS.length - c;
+      body += `<td class="${cls}${isToday(d) ? " today" : ""}">${v}</td>`;
+    }
+    body += "</tr>";
+  });
+  body += "</tfoot>";
+  $("habitGrid").innerHTML = headRows(n) + body;
+}
+
+function renderMoodGrid() {
+  const n = dim(), m = month();
+  const opts = v => `<option value="">·</option>` + Array.from({ length: 10 }, (_, i) => `<option${v == i + 1 ? " selected" : ""}>${i + 1}</option>`).join("");
+  let body = "<tbody>";
+  for (const [k, label] of [["mood", "Ruh hali"], ["motiv", "Motivasyon"]]) {
+    body += `<tr><td class="name">${label}</td>`;
+    for (let d = 1; d <= n; d++) {
+      const v = m[k][d];
+      body += `<td${isToday(d) ? ' class="today"' : ""}><select class="${v ? "" : "empty"}" data-k="${k}" data-d="${d}" aria-label="${label} ${d}">${opts(v)}</select></td>`;
+    }
+    body += "</tr>";
+  }
+  $("moodGrid").innerHTML = headRows(n) + body + "</tbody>";
+}
+
+function dailyCounts() {
+  const n = dim(), m = month(), out = Array(n).fill(0);
+  for (const h of HABITS) for (const d of m.checks[h.id] || []) if (d <= n) out[d - 1]++;
+  return out;
+}
+
+function barColor(p) { return p >= 50 ? "var(--bar-hi)" : p >= 30 ? "var(--bar-mid)" : "var(--bar-lo)"; }
+
+function renderStats() {
+  const n = dim(), m = month();
+  const done = dailyCounts().reduce((a, b) => a + b, 0);
+  const p = pct(done, n * HABITS.length);
+  $("mName").textContent = MONTHS[M];
+  $("yName").textContent = Y;
+  $("sCount").textContent = HABITS.length;
+  $("sDone").textContent = done;
+  $("sPct").textContent = p.toFixed(2) + "%";
+  $("sBar").style.width = p + "%";
+
+  $("habitAna").innerHTML = HABITS.map(h => {
+    const c = (m.checks[h.id] || []).filter(d => d <= n).length;
+    const hp = pct(c, n);
+    return `<div class="r"><span>${h.name} ${h.icon}</span><div class="t"><i style="width:${hp}%;background:${barColor(hp)}"></i></div><span class="p">${hp.toFixed(1)}%</span></div>`;
+  }).join("");
+
+  const weeks = Math.ceil(n / 7);
+  const avg = (k, w) => {
+    const vals = [];
+    for (let d = w * 7 + 1; d <= Math.min(n, w * 7 + 7); d++) if (m[k][d]) vals.push(+m[k][d]);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+  };
+  let html = "";
+  for (const [k, label, col] of [["mood", "Ruh hali", "var(--mood)"], ["motiv", "Motivasyon", "var(--motiv)"]]) {
+    html += `<div class="sub">${label}</div>`;
+    for (let w = 0; w < weeks; w++) {
+      const a = avg(k, w);
+      html += `<div class="r"><span>Hafta ${w + 1}</span><div class="t"><i style="width:${a * 10}%;background:${WEEK_COLORS[w]}"></i></div><span class="p">${a ? a.toFixed(1) : "–"}</span></div>`;
+    }
+  }
+  $("moodAna").innerHTML = html;
+}
+
+// Smooth path through points (Catmull-Rom -> Bezier)
+function smooth(pts) {
+  if (!pts.length) return "";
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += ` C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${p2[0]},${p2[1]}`;
+  }
+  return d;
+}
+
+function chart(svg, series, max, ticks, suffix) {
+  const W = svg.clientWidth || 800, H = svg.clientHeight || 190;
+  const L = 36, R = 10, T = 10, B = 22, n = dim();
+  const x = d => L + ((d - 1) / Math.max(1, n - 1)) * (W - L - R);
+  const y = v => T + (1 - v / max) * (H - T - B);
+  let g = "";
+  for (const t of ticks) g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="#232c4a"/><text x="${L - 6}" y="${y(t) + 3}" fill="#5b6488" font-size="10" text-anchor="end">${t}${suffix}</text>`;
+  for (let d = 1; d <= n; d += (W < 500 ? 3 : 1)) g += `<text x="${x(d)}" y="${H - 6}" fill="${isToday(d) ? "#e7eaf6" : "#5b6488"}" font-size="10" text-anchor="middle">${d}</text>`;
+  for (let w = 1; w * 7 < n; w++) g += `<line x1="${x(w * 7 + .5)}" x2="${x(w * 7 + .5)}" y1="${T}" y2="${H - B}" stroke="#232c4a" stroke-dasharray="3 4"/>`;
+  for (const s of series) {
+    const pts = s.values.map((v, i) => v == null ? null : [x(i + 1), y(v)]).filter(Boolean);
+    if (!pts.length) continue;
+    const line = smooth(pts);
+    if (s.fill) g += `<path d="${line} L${pts[pts.length - 1][0]},${y(0)} L${pts[0][0]},${y(0)} Z" fill="url(#${s.fill})"/>`;
+    g += `<path d="${line}" fill="none" stroke="${s.color}" stroke-width="2"/>`;
+    if (pts.length < 2 || s.dots) g += pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="${s.color}"/>`).join("");
+  }
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.innerHTML = `<defs><linearGradient id="gArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2fc6d4" stop-opacity=".45"/><stop offset="1" stop-color="#2fc6d4" stop-opacity="0"/></linearGradient></defs>` + g;
+}
+
+function renderCharts() {
+  const n = dim(), m = month(), daily = dailyCounts();
+  const last = (Y === now.getFullYear() && M === now.getMonth()) ? now.getDate() : n;
+  const isFuture = Y > now.getFullYear() || (Y === now.getFullYear() && M > now.getMonth());
+  const vals = daily.map((c, i) => isFuture || i + 1 > last ? null : pct(c, HABITS.length));
+  chart($("dailyChart"), [{ values: vals, color: "#2fc6d4", fill: "gArea" }], 100, [0, 25, 50, 75, 100], "%");
+  const series = k => Array.from({ length: n }, (_, i) => m[k][i + 1] ? +m[k][i + 1] : null);
+  chart($("moodChart"), [
+    { values: series("mood"), color: "#c9cfe8", dots: true },
+    { values: series("motiv"), color: "#6c8cff", dots: true },
+  ], 10, [0, 2, 4, 6, 8, 10], "");
+}
+
+function scrollToToday() {
+  document.querySelectorAll(".scroll").forEach(sc => {
+    const t = sc.querySelector(".dd th.today");
+    sc.scrollLeft = t ? Math.max(0, t.offsetLeft - sc.clientWidth / 2) : 0;
+  });
+}
+function renderAll() { renderHabitGrid(); renderMoodGrid(); renderStats(); renderCharts(); scrollToToday(); }
+function refresh() { renderHabitGrid(); renderStats(); renderCharts(); }
+
+$("habitGrid").addEventListener("click", e => {
+  const b = e.target.closest(".cb"); if (!b) return;
+  const m = month(), h = b.dataset.h, d = +b.dataset.d;
+  const set = new Set(m.checks[h] || []);
+  set.has(d) ? set.delete(d) : set.add(d);
+  m.checks[h] = [...set].sort((a, b) => a - b);
+  save(); refresh();
+});
+$("moodGrid").addEventListener("change", e => {
+  const s = e.target.closest("select"); if (!s) return;
+  const m = month();
+  if (s.value) m[s.dataset.k][s.dataset.d] = +s.value; else delete m[s.dataset.k][s.dataset.d];
+  s.classList.toggle("empty", !s.value);
+  save(); renderStats(); renderCharts();
+});
+$("prev").onclick = () => { if (--M < 0) { M = 11; Y--; } renderAll(); };
+$("next").onclick = () => { if (++M > 11) { M = 0; Y++; } renderAll(); };
+
+$("exp").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(store, null, 2)], { type: "application/json" }));
+  a.download = `aliskanlik-yedek-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+};
+$("imp").onclick = () => $("impFile").click();
+$("impFile").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (typeof data !== "object" || Array.isArray(data)) throw 0;
+    store = data; save(); renderAll();
+  } catch { alert("Yedek dosyası okunamadı."); }
+  e.target.value = "";
+};
+
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderCharts, 120); });
+renderAll();
+</script>
+</body>
+</html>
