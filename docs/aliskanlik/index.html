@@ -2,195 +2,609 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0d1c">
 <title>Alışkanlık Takibi</title>
-<meta name="description" content="Aylık alışkanlık takibi: günlük işaretleme, ilerleme, analiz, ruh hali ve motivasyon.">
+<meta name="description" content="Aylık alışkanlık takibi: günlük işaretleme, seriler, seviye, analiz grafikleri, ısı haritası, ruh hali ve rozetler.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0b0f1e; --panel:#131a2e; --panel2:#182039; --line:#232c4a;
-  --text:#e7eaf6; --muted:#8a93b4; --dim:#5b6488;
-  --w1:#6c5cf5; --w2:#4a7dff; --w3:#2fc6d4; --w4:#f0549a; --w5:#35d38a;
-  --bar-hi:#f5c542; --bar-mid:#f08a3c; --bar-lo:#e8504f;
-  --mood:#c9cfe8; --motiv:#6c8cff;
+  --bg:#0a0d1c; --panel:rgba(20,26,48,.72); --panel-solid:#141a30; --panel2:#1a2140; --line:rgba(120,135,200,.16); --line2:#232c4a;
+  --text:#eef0fa; --muted:#8f98bb; --dim:#5b6488;
+  --w1:#7c6cff; --w2:#3d8bff; --w3:#22c7d6; --w4:#ff5fa2; --w5:#35d38a;
+  --hi:#f7c948; --mid:#f59342; --lo:#ef5a5a;
+  --mood:#d2d7ef; --motiv:#7c6cff;
+  --radius:16px;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:radial-gradient(1200px 600px at 10% -10%,#1a1f45 0%,transparent 60%),var(--bg);color:var(--text);
-  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:13px;min-height:100vh}
-.wrap{max-width:1500px;margin:0 auto;padding:20px 16px 48px}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:13px;min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit;cursor:pointer}
 
-/* header */
-.head{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:stretch;margin-bottom:16px}
-.month{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:14px}
-.month h1{margin:0;font-size:26px;font-weight:700;letter-spacing:-.02em;min-width:110px}
-.month small{display:block;color:var(--muted);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+/* ---------- animated background ---------- */
+.aurora{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.38;mix-blend-mode:screen}
+.aurora i:nth-child(1){width:55vmax;height:55vmax;left:-15vmax;top:-20vmax;background:var(--w1);animation:drift1 26s ease-in-out infinite alternate}
+.aurora i:nth-child(2){width:45vmax;height:45vmax;right:-15vmax;top:10vh;background:var(--w4);opacity:.22;animation:drift2 32s ease-in-out infinite alternate}
+.aurora i:nth-child(3){width:50vmax;height:50vmax;left:20vw;bottom:-30vmax;background:var(--w3);opacity:.2;animation:drift3 38s ease-in-out infinite alternate}
+.aurora::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(ellipse at 50% 0%,#000 30%,transparent 75%)}
+@keyframes drift1{to{transform:translate(18vw,14vh) scale(1.15)}}
+@keyframes drift2{to{transform:translate(-22vw,30vh) scale(.85)}}
+@keyframes drift3{to{transform:translate(-14vw,-20vh) scale(1.2)}}
+
+.wrap{max-width:1500px;margin:0 auto;padding:20px 16px 56px}
+
+/* ---------- cards & reveal ---------- */
+.card{position:relative;background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:var(--radius);padding:16px;transition:border-color .3s,box-shadow .3s,transform .3s}
+.card:hover{border-color:rgba(124,108,255,.35);box-shadow:0 10px 40px -18px rgba(124,108,255,.55)}
+.card h2{margin:0 0 12px;font-size:15px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.card h2 .tag{margin-left:auto;font-size:11px;font-weight:600;color:var(--muted);background:var(--panel2);border:1px solid var(--line);padding:3px 8px;border-radius:999px}
+.reveal{opacity:0;transform:translateY(22px) scale(.985);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);transition-delay:calc(var(--i,0)*70ms)}
+.reveal.in{opacity:1;transform:none}
+
+.row{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;margin-bottom:16px}
+.tri{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.mb{margin-bottom:16px}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#2a3358 transparent}
+
+/* ---------- header ---------- */
+.head{display:grid;grid-template-columns:300px minmax(0,1fr) 210px;gap:16px;margin-bottom:16px}
+.month{display:flex;flex-direction:column;gap:12px;justify-content:space-between}
+.month-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.month h1{margin:0;font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1;
+  background:linear-gradient(90deg,var(--w1),var(--w2),var(--w3),var(--w4),var(--w1));background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 8s linear infinite}
+@keyframes shine{to{background-position:300% 0}}
+.month small{display:block;color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-top:6px}
 .nav{display:flex;gap:6px}
-.nav button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--panel2)}
-.nav button:hover{border-color:var(--w1)}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 16px;display:flex;flex-direction:column;justify-content:center;gap:6px}
-.stat .k{color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
-.stat .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
-.pbar{height:14px;border-radius:7px;background:#0d1226;border:1px solid var(--line);overflow:hidden}
-.pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--bar-lo),var(--bar-mid),var(--bar-hi));transition:width .3s}
+.nav button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-size:16px;transition:transform .15s,border-color .2s}
+.nav button:hover{border-color:var(--w1);transform:translateY(-1px)}
+.nav button:active{transform:scale(.92)}
+.lvl{display:flex;flex-direction:column;gap:6px}
+.lvl-top{display:flex;justify-content:space-between;align-items:baseline;font-size:12px}
+.lvl-top b{font-size:13px}
+.lvl-top span{color:var(--muted);font-variant-numeric:tabular-nums}
+.xp{height:8px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden}
+.xp i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--w1),var(--w3));box-shadow:0 0 12px var(--w1);transition:width 1s cubic-bezier(.2,.7,.2,1)}
 
-/* layout */
-.row{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;margin-bottom:16px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
-.card h2{margin:0 0 10px;font-size:15px;font-weight:700;letter-spacing:-.01em}
-.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.stat{display:flex;flex-direction:column;justify-content:space-between;gap:10px;overflow:hidden}
+.stat .k{color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.stat .k em{font-style:normal;font-size:15px}
+.stat .v{font-size:30px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+.stat .s{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat::before{content:"";position:absolute;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;background:var(--c,var(--w1));opacity:.13;filter:blur(8px)}
 
-/* grid table */
-table.grid{border-collapse:separate;border-spacing:0;width:100%;min-width:820px}
+.ringcard{display:grid;place-items:center;text-align:center}
+.ring{position:relative;width:150px;height:150px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .trk{fill:none;stroke:rgba(255,255,255,.06);stroke-width:12}
+.ring .val{fill:none;stroke:url(#ringGrad);stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset 1.2s cubic-bezier(.2,.7,.2,1);filter:drop-shadow(0 0 6px rgba(124,108,255,.7))}
+.ring .lbl{position:absolute;inset:0;display:grid;place-content:center}
+.ring .lbl b{font-size:28px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.ring .lbl span{color:var(--muted);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+
+/* ---------- today ---------- */
+.today-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tile{position:relative;overflow:hidden;text-align:left;border:1px solid var(--line);background:rgba(255,255,255,.03);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:96px;transition:transform .2s,border-color .3s,background .3s,box-shadow .3s}
+.tile:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--hc) 60%,transparent)}
+.tile:active{transform:scale(.96)}
+.tile .ic{font-size:22px;line-height:1;transition:transform .4s cubic-bezier(.3,1.6,.5,1)}
+.tile .nm{font-weight:600;font-size:13px}
+.tile .st{font-size:11px;color:var(--muted)}
+.tile .chk{position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;border:2px solid color-mix(in srgb,var(--hc) 70%,transparent);display:grid;place-items:center;transition:background .25s,border-color .25s}
+.tile.on{background:linear-gradient(135deg,color-mix(in srgb,var(--hc) 38%,transparent),color-mix(in srgb,var(--hc) 8%,transparent));border-color:color-mix(in srgb,var(--hc) 70%,transparent);box-shadow:0 8px 30px -12px var(--hc)}
+.tile.on .ic{transform:scale(1.12) rotate(-8deg)}
+.tile.on .chk{background:var(--hc);border-color:var(--hc)}
+.tile.on .chk::after{content:"";width:5px;height:10px;border:solid #0a0d1c;border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.tile.on .st{color:var(--text)}
+.tile::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.12) 50%,transparent 70%);transform:translateX(-120%)}
+.tile.flash::after{animation:sweep .7s ease-out}
+@keyframes sweep{to{transform:translateX(120%)}}
+.daybox{display:flex;flex-direction:column;gap:14px;justify-content:space-between}
+.daybox .date{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.daybox .date span{display:block;color:var(--muted);font-size:12px;font-weight:500;margin-top:2px;letter-spacing:0}
+.mini{display:flex;align-items:center;gap:14px}
+.mini .ring{width:96px;height:96px}
+.mini .ring .lbl b{font-size:20px}
+.quote{font-size:13px;line-height:1.5;color:#cfd4ec;border-left:2px solid var(--w1);padding-left:12px;font-style:italic;min-height:40px}
+
+/* ---------- habit grid ---------- */
+table.grid{border-collapse:separate;border-spacing:0;width:100%;min-width:860px}
 .grid th,.grid td{padding:0;text-align:center}
-.grid .name{text-align:left;padding:0 10px 0 2px;white-space:nowrap;font-weight:500;position:sticky;left:0;background:var(--panel);z-index:1;min-width:150px}
-.grid .wk th{font-size:11px;font-weight:700;color:#fff;height:24px}
-.grid .wk th.w{border-radius:6px 6px 0 0}
-.grid .dn th,.grid .dd th{font-size:10px;color:var(--muted);font-weight:600;height:16px}
+.grid .name{text-align:left;padding:0 10px 0 2px;white-space:nowrap;font-weight:500;position:sticky;left:0;background:var(--panel-solid);z-index:2;min-width:160px}
+.grid .wk th{font-size:11px;font-weight:700;color:#fff;height:26px;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.grid .wk th.w{border-radius:8px 8px 0 0;background-size:200% 100%}
+.grid .dn th,.grid .dd th{font-size:10px;color:var(--muted);font-weight:600;height:17px}
 .grid .dd th{color:var(--text);padding-bottom:6px}
-.grid th.today,.grid td.today{background:rgba(255,255,255,.04)}
-.grid .dd th.today{color:#fff}
-.grid .dd th.today span{background:var(--w1);border-radius:4px;padding:0 4px}
-.grid tbody td{height:26px}
-.cb{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--c);background:transparent;display:inline-grid;place-items:center;padding:0;transition:background .12s,transform .08s}
-.cb:hover{transform:scale(1.12)}
-.cb.on{background:var(--c)}
-.cb.on::after{content:"";width:5px;height:9px;border:solid #0b0f1e;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
-.grid tfoot td{font-size:10px;color:var(--muted);height:18px;font-variant-numeric:tabular-nums}
-.grid tfoot tr:first-child td{padding-top:8px;border-top:1px solid var(--line)}
+.grid th.today,.grid td.today{background:rgba(124,108,255,.09)}
+.grid .dd th.today span{background:var(--w1);border-radius:5px;padding:1px 4px;box-shadow:0 0 10px var(--w1)}
+.grid tbody td{height:28px}
+.cb{width:19px;height:19px;border-radius:5px;border:1.5px solid var(--c);background:transparent;display:inline-grid;place-items:center;padding:0;transition:background .15s,transform .12s,box-shadow .2s}
+.cb:hover:not(:disabled){transform:scale(1.18);box-shadow:0 0 10px -2px var(--c)}
+.cb.on{background:var(--c);box-shadow:0 0 10px -3px var(--c)}
+.cb.on::after{content:"";width:5px;height:9px;border:solid #0a0d1c;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.cb:disabled{opacity:.28;cursor:default}
+.cb.pop{animation:pop .45s cubic-bezier(.3,1.8,.5,1)}
+@keyframes pop{0%{transform:scale(.4)}100%{transform:scale(1)}}
+.grid tfoot td{font-size:10px;color:var(--muted);height:19px;font-variant-numeric:tabular-nums}
+.grid tfoot tr:first-child td{padding-top:8px;border-top:1px solid var(--line2)}
 .grid tfoot .name{color:var(--muted);font-size:11px;font-weight:600}
 .grid tfoot td.pc{color:var(--text);font-weight:600}
-.grid select{appearance:none;-webkit-appearance:none;background:transparent;border:0;color:var(--text);font:inherit;font-size:11px;width:22px;text-align:center;text-align-last:center;cursor:pointer;padding:3px 0;border-radius:4px}
+.grid select{appearance:none;-webkit-appearance:none;background:transparent;border:0;color:var(--text);font:inherit;font-size:11px;width:22px;text-align:center;text-align-last:center;cursor:pointer;padding:4px 0;border-radius:5px}
 .grid select:hover,.grid select:focus{background:var(--panel2);outline:none}
 .grid select.empty{color:var(--dim)}
-.lock{font-size:11px;opacity:.6}
+.grid select:disabled{opacity:.3;cursor:default}
 
-/* analysis */
-.ana{display:flex;flex-direction:column;gap:9px}
-.ana .r{display:grid;grid-template-columns:120px 1fr 52px;align-items:center;gap:8px}
-.ana .r span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ana .t{height:12px;background:#0d1226;border-radius:3px;overflow:hidden}
-.ana .t i{display:block;height:100%;border-radius:3px;transition:width .3s}
-.ana .p{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
-.ana .sub{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-top:6px}
+/* ---------- bars/analysis ---------- */
+.ana{display:flex;flex-direction:column;gap:10px}
+.ana .r{display:grid;grid-template-columns:118px minmax(0,1fr) 46px 34px;align-items:center;gap:8px}
+.ana .r>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ana .t{height:10px;background:rgba(255,255,255,.05);border-radius:99px;overflow:hidden}
+.ana .t i{display:block;height:100%;width:0;border-radius:99px;transition:width 1s cubic-bezier(.2,.7,.2,1)}
+.ana .p{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.ana .fl{font-size:11px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.ana .fl.hot{color:var(--hi)}
+.ana .sub{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin-top:6px}
+.ana.mood .r{grid-template-columns:70px minmax(0,1fr) 36px}
 
-/* charts */
-.chart{width:100%;height:190px;display:block}
-.legend{display:flex;gap:14px;color:var(--muted);font-size:11px;margin-bottom:6px}
-.legend b{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+/* ---------- charts ---------- */
+.chart{width:100%;height:220px;display:block;touch-action:pan-y;overflow:visible}
+.chart.sm{height:210px}
+.legend{display:flex;gap:16px;color:var(--muted);font-size:11px;margin-bottom:6px;flex-wrap:wrap}
+.legend b{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.draw{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.6s cubic-bezier(.6,.05,.25,1) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.fade{opacity:0;animation:fade .9s .5s ease forwards}
+@keyframes fade{to{opacity:1}}
+.grow{transform-box:fill-box;transform-origin:bottom;animation:grow .9s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*80ms)}
+@keyframes grow{from{transform:scaleY(0)}}
+.radar-poly{transform-box:view-box;transform-origin:center;animation:radar 1.1s cubic-bezier(.3,1.4,.5,1) both}
+@keyframes radar{from{transform:scale(0);opacity:0}}
+.note{color:var(--muted);font-size:12px;margin-top:8px}
+.note b{color:var(--text)}
 
-.foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;color:var(--dim);font-size:11px}
-.foot button{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:12px}
-.foot button:hover{border-color:var(--w1)}
+/* ---------- heatmap ---------- */
+.heat-wrap{--cs:14px}
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,var(--cs));gap:4px;width:max-content}
+.heat .c{width:var(--cs);height:var(--cs);border-radius:calc(var(--cs)*.28);background:rgba(255,255,255,.05);transform:scale(0);animation:cell .5s cubic-bezier(.3,1.5,.5,1) forwards;animation-delay:calc(var(--i)*6ms)}
+@keyframes cell{to{transform:scale(1)}}
+.heat .c.l1{background:#2f2a6b}.heat .c.l2{background:#4a3fb0}.heat .c.l3{background:#6b5cf0}.heat .c.l4{background:#a397ff;box-shadow:0 0 8px rgba(163,151,255,.6)}
+.heat .c.fut{background:transparent;border:1px dashed rgba(255,255,255,.06)}
+.heat .c.now{outline:2px solid var(--w3);outline-offset:1px}
+.heat-wrap{display:flex;gap:8px}
+.heat-days{position:sticky;left:0;z-index:1;background:var(--panel-solid);padding-right:6px;display:grid;grid-template-rows:repeat(7,var(--cs));gap:4px;font-size:10px;color:var(--dim);padding-top:20px;align-items:center}
+.heat-months{display:grid;grid-auto-flow:column;grid-auto-columns:var(--cs);gap:4px;height:16px;margin-bottom:4px;font-size:10px;color:var(--muted)}
+.heat-months span{white-space:nowrap}
+.hlegend{display:flex;align-items:center;gap:4px;color:var(--muted);font-size:11px;margin-top:10px}
+.hlegend i{width:12px;height:12px;border-radius:3px;display:inline-block}
 
-@media (max-width:1100px){.row{grid-template-columns:minmax(0,1fr)}}
+/* ---------- badges ---------- */
+.badges{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.badge{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:14px;padding:14px 12px;text-align:center;background:rgba(255,255,255,.02);display:flex;flex-direction:column;align-items:center;gap:6px}
+.badge .bi{font-size:28px;filter:grayscale(1) brightness(.6);opacity:.5;transition:filter .5s,transform .5s}
+.badge b{font-size:12px}
+.badge span{font-size:11px;color:var(--muted)}
+.badge .bp{width:100%;height:4px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:2px}
+.badge .bp i{display:block;height:100%;background:var(--w1);border-radius:99px}
+.badge.got{border-color:rgba(247,201,72,.45);background:linear-gradient(160deg,rgba(247,201,72,.14),rgba(124,108,255,.06))}
+.badge.got .bi{filter:none;opacity:1;animation:float 3s ease-in-out infinite}
+.badge.got .bp i{background:var(--hi)}
+.badge.got::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.16) 50%,transparent 65%);transform:translateX(-120%);animation:sweep 3.5s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-4px)}}
+
+/* ---------- misc ---------- */
+#tip{position:fixed;z-index:50;pointer-events:none;background:rgba(14,18,36,.95);border:1px solid rgba(124,108,255,.4);border-radius:10px;padding:8px 10px;font-size:12px;line-height:1.45;opacity:0;transform:translateY(4px);transition:opacity .12s,transform .12s;box-shadow:0 10px 30px rgba(0,0,0,.4);max-width:240px}
+#tip.on{opacity:1;transform:none}
+#tip .tt{color:var(--muted);font-size:11px;margin-bottom:2px}
+#tip .tr{display:flex;align-items:center;gap:6px}
+#tip .tr i{width:8px;height:8px;border-radius:50%}
+#toast{position:fixed;left:50%;bottom:28px;z-index:60;transform:translate(-50%,30px);opacity:0;pointer-events:none;background:linear-gradient(90deg,var(--w1),var(--w4));color:#fff;font-weight:700;padding:12px 18px;border-radius:999px;box-shadow:0 12px 40px -10px var(--w1);transition:transform .45s cubic-bezier(.3,1.5,.5,1),opacity .3s;white-space:nowrap}
+#toast.on{transform:translate(-50%,0);opacity:1}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:55}
+.burst{position:fixed;width:0;height:0;pointer-events:none;z-index:56}
+.burst i{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--c);left:-3px;top:-3px;animation:burst .6s cubic-bezier(.1,.8,.3,1) forwards}
+@keyframes burst{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+
+.foot{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;color:var(--dim);font-size:11px;margin-top:8px}
+.foot button{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:12px;transition:border-color .2s,transform .15s}
+.foot button:hover{border-color:var(--w1);transform:translateY(-1px)}
+
+@media (max-width:1200px){
+  .head{grid-template-columns:minmax(0,1fr) 200px}
+  .head .month{grid-column:1/-1}
+  .badges{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media (max-width:1100px){.row,.today-wrap{grid-template-columns:minmax(0,1fr)}.tri{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:760px){
   .head{grid-template-columns:minmax(0,1fr)}
-  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .month{justify-content:space-between}
-  .grid .name{min-width:118px;font-size:12px}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .stat .v{font-size:26px}
+  .ringcard{order:-1}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid .name{min-width:124px;font-size:12px}
+  .badges{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .month h1{font-size:30px}
+  .ana .r{grid-template-columns:108px minmax(0,1fr) 44px 30px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .reveal{opacity:1;transform:none}
 }
 </style>
 </head>
 <body>
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+<canvas id="fx"></canvas>
+<div id="tip"></div>
+<div id="toast"></div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c6cff"/><stop offset=".5" stop-color="#22c7d6"/><stop offset="1" stop-color="#ff5fa2"/>
+    </linearGradient>
+  </defs>
+</svg>
+
 <div class="wrap">
 
+  <!-- Header -->
   <header class="head">
-    <div class="month">
-      <div><h1 id="mName">—</h1><small>Alışkanlık Takibi · <span id="yName"></span></small></div>
-      <div class="nav"><button id="prev" aria-label="Önceki ay">‹</button><button id="next" aria-label="Sonraki ay">›</button></div>
+    <div class="card month reveal" style="--i:0">
+      <div class="month-top">
+        <div><h1 id="mName">—</h1><small>Alışkanlık Takibi · <span id="yName"></span></small></div>
+        <div class="nav"><button id="prev" aria-label="Önceki ay">‹</button><button id="next" aria-label="Sonraki ay">›</button></div>
+      </div>
+      <div class="lvl">
+        <div class="lvl-top"><b id="lvlName">Seviye 1</b><span id="lvlXp">0 / 250 XP</span></div>
+        <div class="xp"><i id="xpBar"></i></div>
+      </div>
     </div>
     <div class="stats">
-      <div class="stat"><span class="k">Alışkanlık sayısı</span><span class="v" id="sCount">0</span></div>
-      <div class="stat"><span class="k">Tamamlanan</span><span class="v" id="sDone">0</span></div>
-      <div class="stat"><span class="k">İlerleme</span><div class="pbar"><i id="sBar"></i></div></div>
-      <div class="stat"><span class="k">İlerleme %</span><span class="v" id="sPct">0%</span></div>
+      <div class="card stat reveal" style="--i:1;--c:var(--w2)"><span class="k"><em>🎯</em>Alışkanlık</span><span class="v" id="sCount">0</span><span class="s">takip edilen aktivite</span></div>
+      <div class="card stat reveal" style="--i:2;--c:var(--w3)"><span class="k"><em>✅</em>Tamamlanan</span><span class="v" id="sDone">0</span><span class="s" id="sDoneSub">bu ay</span></div>
+      <div class="card stat reveal" style="--i:3;--c:var(--w4)"><span class="k"><em>🔥</em>En iyi seri</span><span class="v" id="sStreak">0</span><span class="s" id="sStreakSub">gün</span></div>
+      <div class="card stat reveal" style="--i:4;--c:var(--w5)"><span class="k"><em>💎</em>Mükemmel gün</span><span class="v" id="sPerfect">0</span><span class="s">8/8 tamamlanan günler (bu ay)</span></div>
+    </div>
+    <div class="card ringcard reveal" style="--i:5">
+      <div class="ring">
+        <svg viewBox="0 0 120 120"><circle class="trk" cx="60" cy="60" r="50"/><circle class="val" id="ringVal" cx="60" cy="60" r="50" stroke-dasharray="314.16" stroke-dashoffset="314.16"/></svg>
+        <div class="lbl"><b id="sPct">0%</b><span>Aylık ilerleme</span></div>
+      </div>
     </div>
   </header>
 
+  <!-- Today -->
+  <section class="today-wrap mb">
+    <div class="card reveal" style="--i:1">
+      <h2>⚡ Bugün <span class="tag" id="todayTag">0/8</span></h2>
+      <div class="tiles" id="tiles"></div>
+    </div>
+    <div class="card daybox reveal" style="--i:2">
+      <div class="date" id="todayDate">—</div>
+      <div class="mini">
+        <div class="ring">
+          <svg viewBox="0 0 120 120"><circle class="trk" cx="60" cy="60" r="50"/><circle class="val" id="todayRing" cx="60" cy="60" r="50" stroke-dasharray="314.16" stroke-dashoffset="314.16"/></svg>
+          <div class="lbl"><b id="todayPct">0%</b></div>
+        </div>
+        <div style="color:var(--muted);font-size:12px;line-height:1.6" id="todayMsg"></div>
+      </div>
+      <div class="quote" id="quote"></div>
+    </div>
+  </section>
+
+  <!-- Grid + analysis -->
   <section class="row">
-    <div class="card">
-      <h2>Aktivitelerim</h2>
+    <div class="card reveal">
+      <h2>📋 Aktivitelerim</h2>
       <div class="scroll"><table class="grid" id="habitGrid"></table></div>
     </div>
-    <div class="card">
-      <h2>Analiz</h2>
+    <div class="card reveal" style="--i:1">
+      <h2>📊 Analiz <span class="tag">bugüne kadar</span></h2>
       <div class="ana" id="habitAna"></div>
+      <p class="note">🔥 = şu anki seri (gün)</p>
     </div>
   </section>
 
-  <section class="card" style="margin-bottom:16px">
-    <h2>Günlük ilerleme</h2>
-    <svg class="chart" id="dailyChart"></svg>
+  <!-- Daily chart -->
+  <section class="card mb reveal">
+    <h2>📈 Günlük ilerleme <span class="tag" id="avgTag">ort. 0%</span></h2>
+    <svg class="chart" id="dailyChart" role="img" aria-label="Günlük tamamlanma yüzdesi grafiği"></svg>
   </section>
 
+  <!-- Three-up -->
+  <section class="tri">
+    <div class="card reveal">
+      <h2>🗓️ Haftalık karşılaştırma</h2>
+      <svg class="chart sm" id="weekChart" role="img" aria-label="Haftalık tamamlanma yüzdeleri"></svg>
+      <p class="note" id="weekNote"></p>
+    </div>
+    <div class="card reveal" style="--i:1">
+      <h2>🕸️ Denge</h2>
+      <svg class="chart sm" id="radarChart" role="img" aria-label="Aktivite denge grafiği"></svg>
+      <p class="note" id="radarNote"></p>
+    </div>
+    <div class="card reveal" style="--i:2">
+      <h2>📅 Haftanın günleri</h2>
+      <svg class="chart sm" id="dowChart" role="img" aria-label="Haftanın günlerine göre ortalama"></svg>
+      <p class="note" id="dowNote"></p>
+    </div>
+  </section>
+
+  <!-- Heatmap -->
+  <section class="card mb reveal">
+    <h2>🟪 Son 6 ay <span class="tag" id="heatTag"></span></h2>
+    <div class="scroll" id="heatScroll">
+      <div class="heat-wrap">
+        <div class="heat-days"><span>Pt</span><span></span><span>Ça</span><span></span><span>Cu</span><span></span><span>Pz</span></div>
+        <div><div class="heat-months" id="heatMonths"></div><div class="heat" id="heat"></div></div>
+      </div>
+    </div>
+    <div class="hlegend">Az <i style="background:rgba(255,255,255,.05)"></i><i style="background:#2f2a6b"></i><i style="background:#4a3fb0"></i><i style="background:#6b5cf0"></i><i style="background:#a397ff"></i> Çok</div>
+  </section>
+
+  <!-- Mood -->
   <section class="row">
-    <div class="card">
-      <h2>Ruh Hali</h2>
+    <div class="card reveal">
+      <h2>🧠 Ruh Hali</h2>
       <div class="scroll"><table class="grid" id="moodGrid"></table></div>
-      <div class="legend" style="margin-top:12px"><span><b style="background:var(--mood)"></b>Ruh hali</span><span><b style="background:var(--motiv)"></b>Motivasyon</span></div>
-      <svg class="chart" id="moodChart"></svg>
+      <div class="legend" style="margin-top:14px"><span><b style="background:var(--mood)"></b>Ruh hali</span><span><b style="background:var(--motiv)"></b>Motivasyon</span></div>
+      <svg class="chart" id="moodChart" role="img" aria-label="Ruh hali ve motivasyon grafiği"></svg>
     </div>
-    <div class="card">
-      <h2>Analiz</h2>
-      <div class="ana" id="moodAna"></div>
+    <div class="card reveal" style="--i:1">
+      <h2>🧭 Haftalık ortalama</h2>
+      <div class="ana mood" id="moodAna"></div>
     </div>
+  </section>
+
+  <!-- Badges -->
+  <section class="card mb reveal">
+    <h2>🏆 Rozetler <span class="tag" id="badgeTag">0/0</span></h2>
+    <div class="badges" id="badges"></div>
   </section>
 
   <footer class="foot">
-    <span>Veriler bu tarayıcıda saklanır. Cihaz değiştirirken yedeği dışa aktar, sonra içe aktar.</span>
+    <span>Veriler bu tarayıcıda saklanır. Cihaz değiştirirken yedeği indir, diğer cihazda yükle.</span>
     <span style="display:flex;gap:8px">
-      <button id="exp">Yedeği indir</button>
-      <button id="imp">Yedeği yükle</button>
+      <button id="exp">⬇ Yedeği indir</button>
+      <button id="imp">⬆ Yedeği yükle</button>
       <input type="file" id="impFile" accept="application/json" hidden>
     </span>
   </footer>
 </div>
 
 <script>
-// ---- Ayarlar: aktivite listesi ----
+// ================= Ayarlar =================
 const HABITS = [
-  { id: "kcal",    name: "1000 kcal açık",   icon: "🔥" },
-  { id: "kitap",   name: "Kitap okuma",      icon: "📚" },
-  { id: "spor",    name: "Spor",             icon: "💪" },
-  { id: "quant",   name: "Quant çalışma",    icon: "📈" },
-  { id: "yazilim", name: "Yazılım çalışma",  icon: "💻" },
-  { id: "ders",    name: "Ders çalışma",     icon: "📖" },
-  { id: "lmx",     name: "LMX",              icon: "🔒" },
-  { id: "su",      name: "3 litre su",       icon: "💧" },
+  { id: "kcal",    name: "1000 kcal açık",  icon: "🔥", color: "#f59342" },
+  { id: "kitap",   name: "Kitap okuma",     icon: "📚", color: "#a78bfa" },
+  { id: "spor",    name: "Spor",            icon: "💪", color: "#ff5f7e" },
+  { id: "quant",   name: "Quant çalışma",   icon: "📈", color: "#3d8bff" },
+  { id: "yazilim", name: "Yazılım çalışma", icon: "💻", color: "#22c7d6" },
+  { id: "ders",    name: "Ders çalışma",    icon: "📖", color: "#f7c948" },
+  { id: "lmx",     name: "LMX",             icon: "🔒", color: "#ff5fa2" },
+  { id: "su",      name: "3 litre su",      icon: "💧", color: "#38bdf8" },
 ];
+const QUOTES = [
+  "Küçük adımlar, büyük sonuçlar doğurur.",
+  "Motivasyon başlatır, alışkanlık devam ettirir.",
+  "Mükemmel olmak zorunda değilsin. Sadece bugün de yap.",
+  "Zinciri kırma.",
+  "Sessiz ilerleme, gürültülü sonuçlar.",
+  "Her tik, gelecekteki sana bir yatırım.",
+  "Bugün yaptığın, yarın olacağın kişiyi inşa eder.",
+  "Canın istemediğinde yaptığın gün, en çok sayılan gündür.",
+  "Disiplin, kendine verdiğin sözü tutmaktır.",
+  "Yavaş ilerlemek, hiç ilerlememekten iyidir.",
+  "Kimse izlemezken de aynı kişi ol.",
+  "Bir gün ya da birinci gün. Karar senin.",
+];
+// ===========================================
+
 const MONTHS = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const MSHORT = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
 const DAYS = ["Pz","Pt","Sa","Ça","Pe","Cu","Ct"];
-const WEEK_COLORS = ["--w1","--w2","--w3","--w4","--w5"].map(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim());
+const DAYS_FULL = ["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const WEEK_COLORS = ["--w1","--w2","--w3","--w4","--w5"].map(css);
 const KEY = "aliskanlik:v1";
+const H = HABITS.length;
 
 let store = {};
 try { store = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { store = {}; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} };
 
 const now = new Date();
-let Y = now.getFullYear(), M = now.getMonth();
+const TY = now.getFullYear(), TM = now.getMonth(), TD = now.getDate();
+let Y = TY, M = TM;
 const $ = id => document.getElementById(id);
-const mkey = () => `${Y}-${String(M + 1).padStart(2, "0")}`;
-const dim = () => new Date(Y, M + 1, 0).getDate();
-const month = () => {
-  const k = mkey();
-  store[k] ??= { checks: {}, mood: {}, motiv: {} };
-  return store[k];
-};
+const pad = n => String(n).padStart(2, "0");
+const mk = (y, m) => `${y}-${pad(m + 1)}`;
+const dk = (y, m, d) => `${y}-${pad(m + 1)}-${d}`;
+const dim = (y = Y, m = M) => new Date(y, m + 1, 0).getDate();
+const monthOf = (y = Y, m = M) => { const k = mk(y, m); store[k] ??= { checks: {}, mood: {}, motiv: {} }; return store[k]; };
 const weekOf = d => Math.floor((d - 1) / 7);
-const isToday = d => Y === now.getFullYear() && M === now.getMonth() && d === now.getDate();
+const isToday = d => Y === TY && M === TM && d === TD;
+const isFuture = d => Y > TY || (Y === TY && (M > TM || (M === TM && d > TD)));
+const elapsed = () => (Y < TY || (Y === TY && M < TM)) ? dim() : (Y === TY && M === TM ? TD : 0);
 const pct = (a, b) => b ? (a / b) * 100 : 0;
-const fmt = v => v.toFixed(v >= 10 || v === 0 ? 0 : 1) + "%";
+const fmt = v => (v >= 10 || v === 0 ? v.toFixed(0) : v.toFixed(1)) + "%";
+const dayNum = (y, m, d) => Math.round(Date.UTC(y, m, d) / 864e5);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+// ---------- index over all data ----------
+let IDX;
+function buildIndex() {
+  const sets = Object.fromEntries(HABITS.map(h => [h.id, new Set()]));
+  const counts = new Map();
+  for (const [k, m] of Object.entries(store)) {
+    const mm = /^(\d{4})-(\d{2})$/.exec(k); if (!mm || !m || !m.checks) continue;
+    const y = +mm[1], mo = +mm[2] - 1, n = dim(y, mo);
+    for (const h of HABITS) for (const d of m.checks[h.id] || []) {
+      if (d < 1 || d > n) continue;
+      const key = dk(y, mo, d);
+      sets[h.id].add(key);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+  }
+  const streak = {};
+  for (const h of HABITS) {
+    const s = sets[h.id];
+    const nums = [...s].map(k => { const [y, m, d] = k.split("-").map(Number); return dayNum(y, m - 1, d); }).sort((a, b) => a - b);
+    let best = 0, run = 0, prev = null;
+    for (const n of nums) { run = prev !== null && n === prev + 1 ? run + 1 : 1; best = Math.max(best, run); prev = n; }
+    let cur = 0; const t = new Date(TY, TM, TD);
+    if (!s.has(dk(TY, TM, TD))) t.setDate(t.getDate() - 1);
+    while (s.has(dk(t.getFullYear(), t.getMonth(), t.getDate()))) { cur++; t.setDate(t.getDate() - 1); }
+    streak[h.id] = { cur, best, total: s.size };
+  }
+  let total = 0, perfect = 0;
+  for (const c of counts.values()) { total += c; if (c >= H) perfect++; }
+  IDX = { sets, counts, streak, total, perfect };
+}
+const countOn = (y, m, d) => IDX.counts.get(dk(y, m, d)) || 0;
+const dailyCounts = () => Array.from({ length: dim() }, (_, i) => countOn(Y, M, i + 1));
+
+// ---------- animated numbers ----------
+function countTo(el, to, { dec = 0, suf = "", dur = 900 } = {}) {
+  const from = el._v ?? 0; el._v = to;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches || from === to) { el.textContent = to.toFixed(dec) + suf; return; }
+  const t0 = performance.now();
+  const step = t => {
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = (from + (to - from) * e).toFixed(dec) + suf;
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+const setRing = (el, p) => el.style.strokeDashoffset = 314.16 * (1 - Math.min(100, p) / 100);
+
+// ---------- tooltip ----------
+const tip = $("tip");
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.classList.add("on");
+  const r = tip.getBoundingClientRect();
+  let left = Math.min(Math.max(8, x + 14), innerWidth - r.width - 8);
+  let top = y - r.height - 14; if (top < 8) top = y + 18;
+  tip.style.left = left + "px"; tip.style.top = top + "px";
+}
+const hideTip = () => tip.classList.remove("on");
+document.addEventListener("pointermove", e => {
+  const t = e.target.closest?.("[data-tip]");
+  if (t) showTip(t.dataset.tip, e.clientX, e.clientY);
+  else if (!e.target.closest?.(".hov")) hideTip();
+});
+document.addEventListener("scroll", hideTip, { passive: true });
+
+// ---------- toast + effects ----------
+let toastT;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 2600); }
+function burst(el, color) {
+  const r = el.getBoundingClientRect(), b = document.createElement("div");
+  b.className = "burst"; b.style.left = r.left + r.width / 2 + "px"; b.style.top = r.top + r.height / 2 + "px";
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2, d = 18 + Math.random() * 16, p = document.createElement("i");
+    p.style.cssText = `--c:${color};--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d}px`;
+    b.appendChild(p);
+  }
+  document.body.appendChild(b); setTimeout(() => b.remove(), 700);
+}
+const fx = $("fx"), ctx = fx.getContext("2d"); let parts = [], raf;
+function confetti() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  fx.width = innerWidth * devicePixelRatio; fx.height = innerHeight * devicePixelRatio;
+  const cols = [...WEEK_COLORS, "#f7c948"];
+  for (let i = 0; i < 160; i++) parts.push({
+    x: innerWidth / 2 + (Math.random() - .5) * 120, y: innerHeight * .55,
+    vx: (Math.random() - .5) * 16, vy: -Math.random() * 18 - 8, g: .45 + Math.random() * .2,
+    s: 5 + Math.random() * 6, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[i % cols.length], life: 0,
+  });
+  cancelAnimationFrame(raf);
+  const tick = () => {
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    parts = parts.filter(p => p.life < 180 && p.y < innerHeight + 40);
+    for (const p of parts) {
+      p.vy += p.g; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.life++;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c;
+      ctx.globalAlpha = Math.max(0, 1 - p.life / 180); ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.restore();
+    }
+    if (parts.length) raf = requestAnimationFrame(tick); else ctx.clearRect(0, 0, innerWidth, innerHeight);
+  };
+  tick();
+}
+
+// ---------- toggling ----------
+function toggle(y, m, hId, d, el, color) {
+  const mo = monthOf(y, m), set = new Set(mo.checks[hId] || []);
+  const before = countOn(y, m, d), adding = !set.has(d);
+  adding ? set.add(d) : set.delete(d);
+  mo.checks[hId] = [...set].sort((a, b) => a - b);
+  save(); buildIndex();
+  if (adding && el) burst(el, color);
+  if (adding && before === H - 1) { confetti(); toast("💎 Mükemmel gün! +50 XP"); }
+  else if (adding) {
+    const s = IDX.streak[hId].cur;
+    if (y === TY && m === TM && d === TD && [3, 7, 14, 21, 30, 50, 100].includes(s)) toast(`🔥 ${HABITS.find(h => h.id === hId).name}: ${s} günlük seri!`);
+  }
+}
+
+// ---------- header ----------
+function levelInfo(xp) {
+  let lvl = 1, need = 250, acc = 0;
+  while (xp >= acc + need) { acc += need; lvl++; need = 250 + (lvl - 1) * 100; }
+  const titles = ["Çaylak", "Kararlı", "Disiplinli", "Odaklı", "Savaşçı", "Usta", "Efsane", "Ölümsüz"];
+  return { lvl, cur: xp - acc, need, title: titles[Math.min(titles.length - 1, Math.floor((lvl - 1) / 2))] };
+}
+function renderHeader() {
+  const n = dim(), el = elapsed(), daily = dailyCounts();
+  const done = daily.reduce((a, b) => a + b, 0);
+  const p = pct(daily.slice(0, el).reduce((a, b) => a + b, 0), el * H);
+  $("mName").textContent = MONTHS[M]; $("yName").textContent = Y;
+  countTo($("sCount"), H);
+  countTo($("sDone"), done);
+  $("sDoneSub").textContent = `${MONTHS[M]} ayında toplam tik`;
+  countTo($("sPct"), p, { dec: 1, suf: "%" });
+  setRing($("ringVal"), p);
+  countTo($("sPerfect"), daily.filter(c => c >= H).length);
+  let bestH = HABITS[0];
+  for (const h of HABITS) if (IDX.streak[h.id].cur > IDX.streak[bestH.id].cur) bestH = h;
+  countTo($("sStreak"), IDX.streak[bestH.id].cur);
+  $("sStreakSub").textContent = IDX.streak[bestH.id].cur ? `gün · ${bestH.icon} ${bestH.name}` : "gün · bugün başla";
+  const xp = IDX.total * 10 + IDX.perfect * 50, L = levelInfo(xp);
+  $("lvlName").textContent = `Seviye ${L.lvl} · ${L.title}`;
+  $("lvlXp").textContent = `${L.cur} / ${L.need} XP`;
+  $("xpBar").style.width = pct(L.cur, L.need) + "%";
+}
+
+// ---------- today ----------
+function renderToday() {
+  const mo = monthOf(TY, TM);
+  const c = countOn(TY, TM, TD), p = pct(c, H);
+  $("todayTag").textContent = `${c}/${H}`;
+  $("todayDate").innerHTML = `${TD} ${MONTHS[TM]}<span>${DAYS_FULL[now.getDay()]} · ${TY}</span>`;
+  countTo($("todayPct"), p, { dec: 0, suf: "%" });
+  setRing($("todayRing"), p);
+  $("todayMsg").innerHTML = c === H ? "<b style='color:var(--hi)'>Mükemmel gün!</b><br>Hepsini tamamladın." :
+    c === 0 ? "Henüz başlamadın.<br>İlk tik en zorudur." : `<b style="color:var(--text)">${H - c}</b> aktivite kaldı.<br>Devam et!`;
+  const start = new Date(TY, 0, 0);
+  $("quote").textContent = "“" + QUOTES[Math.floor((now - start) / 864e5) % QUOTES.length] + "”";
+  $("tiles").innerHTML = HABITS.map(h => {
+    const on = (mo.checks[h.id] || []).includes(TD), s = IDX.streak[h.id].cur;
+    return `<button class="tile${on ? " on" : ""}" style="--hc:${h.color}" data-h="${h.id}" aria-pressed="${on}">
+      <span class="chk"></span><span class="ic">${h.icon}</span>
+      <span><div class="nm">${esc(h.name)}</div><div class="st">${on ? "Tamamlandı" : "Bekliyor"}${s ? ` · 🔥${s}` : ""}</div></span></button>`;
+  }).join("");
+}
+
+// ---------- grids ----------
 function headRows(n) {
   let wk = `<tr class="wk"><th class="name"></th>`;
   for (let w = 0; w * 7 < n; w++) {
-    const span = Math.min(7, n - w * 7);
-    wk += `<th class="w" colspan="${span}" style="background:${WEEK_COLORS[w]}">Hafta ${w + 1}</th>`;
+    const span = Math.min(7, n - w * 7), c = WEEK_COLORS[w];
+    wk += `<th class="w" colspan="${span}" style="background:linear-gradient(90deg,${c},color-mix(in srgb,${c} 75%,#fff))">Hafta ${w + 1}</th>`;
   }
   let dn = `<tr class="dn"><th class="name"></th>`, dd = `<tr class="dd"><th class="name"></th>`;
   for (let d = 1; d <= n; d++) {
@@ -200,184 +614,353 @@ function headRows(n) {
   }
   return `<thead>${wk}</tr>${dn}</tr>${dd}</tr></thead>`;
 }
-
 function renderHabitGrid() {
-  const n = dim(), m = month();
+  const n = dim(), m = monthOf();
   let body = "<tbody>";
   for (const h of HABITS) {
     const set = new Set(m.checks[h.id] || []);
-    body += `<tr><td class="name">${h.name} <span>${h.icon}</span></td>`;
+    body += `<tr><td class="name">${esc(h.name)} <span>${h.icon}</span></td>`;
     for (let d = 1; d <= n; d++) {
-      body += `<td${isToday(d) ? ' class="today"' : ""}><button class="cb${set.has(d) ? " on" : ""}" style="--c:${WEEK_COLORS[weekOf(d)]}" data-h="${h.id}" data-d="${d}" aria-label="${h.name} ${d}"></button></td>`;
+      const fut = isFuture(d);
+      body += `<td${isToday(d) ? ' class="today"' : ""}><button class="cb${set.has(d) ? " on" : ""}" style="--c:${WEEK_COLORS[weekOf(d)]}" data-h="${h.id}" data-d="${d}"${fut ? " disabled" : ""} aria-label="${esc(h.name)} ${d}"></button></td>`;
     }
     body += "</tr>";
   }
   body += "</tbody><tfoot>";
-  const rows = [["İlerleme", "pc"], ["Tamamlanan", ""], ["Kalan", ""]];
   const daily = dailyCounts();
-  rows.forEach(([label, cls], i) => {
+  [["İlerleme", "pc"], ["Tamamlanan", ""], ["Kalan", ""]].forEach(([label, cls], i) => {
     body += `<tr><td class="name">${label}</td>`;
     for (let d = 1; d <= n; d++) {
-      const c = daily[d - 1];
-      const v = i === 0 ? fmt(pct(c, HABITS.length)) : i === 1 ? c : HABITS.length - c;
+      const c = daily[d - 1], fut = isFuture(d);
+      const v = fut ? "·" : i === 0 ? fmt(pct(c, H)) : i === 1 ? c : H - c;
       body += `<td class="${cls}${isToday(d) ? " today" : ""}">${v}</td>`;
     }
     body += "</tr>";
   });
-  body += "</tfoot>";
-  $("habitGrid").innerHTML = headRows(n) + body;
+  $("habitGrid").innerHTML = headRows(n) + body + "</tfoot>";
 }
-
 function renderMoodGrid() {
-  const n = dim(), m = month();
+  const n = dim(), m = monthOf();
   const opts = v => `<option value="">·</option>` + Array.from({ length: 10 }, (_, i) => `<option${v == i + 1 ? " selected" : ""}>${i + 1}</option>`).join("");
   let body = "<tbody>";
   for (const [k, label] of [["mood", "Ruh hali"], ["motiv", "Motivasyon"]]) {
     body += `<tr><td class="name">${label}</td>`;
     for (let d = 1; d <= n; d++) {
       const v = m[k][d];
-      body += `<td${isToday(d) ? ' class="today"' : ""}><select class="${v ? "" : "empty"}" data-k="${k}" data-d="${d}" aria-label="${label} ${d}">${opts(v)}</select></td>`;
+      body += `<td${isToday(d) ? ' class="today"' : ""}><select class="${v ? "" : "empty"}" data-k="${k}" data-d="${d}"${isFuture(d) ? " disabled" : ""} aria-label="${label} ${d}">${opts(v)}</select></td>`;
     }
     body += "</tr>";
   }
   $("moodGrid").innerHTML = headRows(n) + body + "</tbody>";
 }
 
-function dailyCounts() {
-  const n = dim(), m = month(), out = Array(n).fill(0);
-  for (const h of HABITS) for (const d of m.checks[h.id] || []) if (d <= n) out[d - 1]++;
-  return out;
-}
-
-function barColor(p) { return p >= 50 ? "var(--bar-hi)" : p >= 30 ? "var(--bar-mid)" : "var(--bar-lo)"; }
-
-function renderStats() {
-  const n = dim(), m = month();
-  const done = dailyCounts().reduce((a, b) => a + b, 0);
-  const p = pct(done, n * HABITS.length);
-  $("mName").textContent = MONTHS[M];
-  $("yName").textContent = Y;
-  $("sCount").textContent = HABITS.length;
-  $("sDone").textContent = done;
-  $("sPct").textContent = p.toFixed(2) + "%";
-  $("sBar").style.width = p + "%";
-
+// ---------- analysis lists ----------
+const barColor = p => p >= 60 ? "linear-gradient(90deg,#f59342,#f7c948)" : p >= 30 ? "linear-gradient(90deg,#ef5a5a,#f59342)" : "linear-gradient(90deg,#c43d5a,#ef5a5a)";
+function renderAnalysis() {
+  const n = dim(), m = monthOf(), el = elapsed();
   $("habitAna").innerHTML = HABITS.map(h => {
-    const c = (m.checks[h.id] || []).filter(d => d <= n).length;
-    const hp = pct(c, n);
-    return `<div class="r"><span>${h.name} ${h.icon}</span><div class="t"><i style="width:${hp}%;background:${barColor(hp)}"></i></div><span class="p">${hp.toFixed(1)}%</span></div>`;
+    const c = (m.checks[h.id] || []).filter(d => d <= el).length, hp = pct(c, el), s = IDX.streak[h.id];
+    return `<div class="r" data-tip="<div class='tt'>${esc(h.name)}</div>${c} / ${el} gün · %${hp.toFixed(1)}<br>Seri: ${s.cur} · En uzun: ${s.best} · Toplam: ${s.total}">
+      <span>${esc(h.name)} ${h.icon}</span><div class="t"><i data-w="${hp}" style="background:${barColor(hp)}"></i></div>
+      <span class="p">${hp.toFixed(0)}%</span><span class="fl${s.cur >= 3 ? " hot" : ""}">🔥${s.cur}</span></div>`;
   }).join("");
 
   const weeks = Math.ceil(n / 7);
-  const avg = (k, w) => {
-    const vals = [];
-    for (let d = w * 7 + 1; d <= Math.min(n, w * 7 + 7); d++) if (m[k][d]) vals.push(+m[k][d]);
-    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-  };
+  const avg = (k, w) => { const v = []; for (let d = w * 7 + 1; d <= Math.min(n, w * 7 + 7); d++) if (m[k][d]) v.push(+m[k][d]); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0; };
   let html = "";
-  for (const [k, label, col] of [["mood", "Ruh hali", "var(--mood)"], ["motiv", "Motivasyon", "var(--motiv)"]]) {
+  for (const [k, label] of [["mood", "Ruh hali"], ["motiv", "Motivasyon"]]) {
     html += `<div class="sub">${label}</div>`;
     for (let w = 0; w < weeks; w++) {
       const a = avg(k, w);
-      html += `<div class="r"><span>Hafta ${w + 1}</span><div class="t"><i style="width:${a * 10}%;background:${WEEK_COLORS[w]}"></i></div><span class="p">${a ? a.toFixed(1) : "–"}</span></div>`;
+      html += `<div class="r"><span>Hafta ${w + 1}</span><div class="t"><i data-w="${a * 10}" style="background:${WEEK_COLORS[w]}"></i></div><span class="p">${a ? a.toFixed(1) : "–"}</span></div>`;
     }
   }
   $("moodAna").innerHTML = html;
+  requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll(".ana .t i").forEach(i => i.style.width = i.dataset.w + "%")));
 }
 
-// Smooth path through points (Catmull-Rom -> Bezier)
-function smooth(pts) {
+// ---------- SVG helpers ----------
+function smooth(pts, lo, hi) {
   if (!pts.length) return "";
+  const cl = v => Math.min(hi, Math.max(lo, v));
   let d = `M${pts[0][0]},${pts[0][1]}`;
   for (let i = 0; i < pts.length - 1; i++) {
     const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
-    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
-    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
-    d += ` C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${p2[0]},${p2[1]}`;
+    d += ` C${p1[0] + (p2[0] - p0[0]) / 6},${cl(p1[1] + (p2[1] - p0[1]) / 6)} ${p2[0] - (p3[0] - p1[0]) / 6},${cl(p2[1] - (p3[1] - p1[1]) / 6)} ${p2[0]},${p2[1]}`;
   }
   return d;
 }
+const size = svg => [svg.clientWidth || 800, svg.clientHeight || 220];
 
-function chart(svg, series, max, ticks, suffix) {
-  const W = svg.clientWidth || 800, H = svg.clientHeight || 190;
-  const L = 36, R = 10, T = 10, B = 22, n = dim();
+function lineChart(svg, { series, max, ticks, suffix, animate, tipFn, gradId }) {
+  const [W, Hh] = size(svg), L = 34, R = 12, T = 12, B = 24, n = dim();
   const x = d => L + ((d - 1) / Math.max(1, n - 1)) * (W - L - R);
-  const y = v => T + (1 - v / max) * (H - T - B);
-  let g = "";
-  for (const t of ticks) g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="#232c4a"/><text x="${L - 6}" y="${y(t) + 3}" fill="#5b6488" font-size="10" text-anchor="end">${t}${suffix}</text>`;
-  for (let d = 1; d <= n; d += (W < 500 ? 3 : 1)) g += `<text x="${x(d)}" y="${H - 6}" fill="${isToday(d) ? "#e7eaf6" : "#5b6488"}" font-size="10" text-anchor="middle">${d}</text>`;
-  for (let w = 1; w * 7 < n; w++) g += `<line x1="${x(w * 7 + .5)}" x2="${x(w * 7 + .5)}" y1="${T}" y2="${H - B}" stroke="#232c4a" stroke-dasharray="3 4"/>`;
+  const y = v => T + (1 - v / max) * (Hh - T - B);
+  const stops = WEEK_COLORS.map((c, i) => `<stop offset="${i / (WEEK_COLORS.length - 1)}" stop-color="${c}"/>`).join("");
+  let g = `<defs>
+    <linearGradient id="${gradId}h" gradientUnits="userSpaceOnUse" x1="${L}" x2="${W - R}" y1="0" y2="0">${stops}</linearGradient>
+    <linearGradient id="${gradId}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <mask id="${gradId}m"><rect x="0" y="0" width="${W}" height="${Hh}" fill="url(#${gradId}v)"/></mask>
+    <filter id="${gradId}g" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>`;
+  for (const t of ticks) g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="rgba(140,150,210,.12)"/><text x="${L - 8}" y="${y(t) + 3}" fill="#5b6488" font-size="10" text-anchor="end">${t}${suffix}</text>`;
+  const stepX = W < 520 ? 3 : 1;
+  for (let d = 1; d <= n; d++) if ((d - 1) % stepX === 0 || isToday(d)) g += `<text x="${x(d)}" y="${Hh - 6}" fill="${isToday(d) ? "#eef0fa" : "#5b6488"}" font-weight="${isToday(d) ? 700 : 400}" font-size="10" text-anchor="middle">${d}</text>`;
+  for (let w = 1; w * 7 < n; w++) g += `<line x1="${(x(w * 7) + x(w * 7 + 1)) / 2}" x2="${(x(w * 7) + x(w * 7 + 1)) / 2}" y1="${T}" y2="${Hh - B}" stroke="rgba(140,150,210,.14)" stroke-dasharray="3 5"/>`;
+  if (Y === TY && M === TM) g += `<line x1="${x(TD)}" x2="${x(TD)}" y1="${T}" y2="${Hh - B}" stroke="var(--w3)" stroke-opacity=".35"/>`;
   for (const s of series) {
     const pts = s.values.map((v, i) => v == null ? null : [x(i + 1), y(v)]).filter(Boolean);
     if (!pts.length) continue;
-    const line = smooth(pts);
-    if (s.fill) g += `<path d="${line} L${pts[pts.length - 1][0]},${y(0)} L${pts[0][0]},${y(0)} Z" fill="url(#${s.fill})"/>`;
-    g += `<path d="${line}" fill="none" stroke="${s.color}" stroke-width="2"/>`;
-    if (pts.length < 2 || s.dots) g += pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="${s.color}"/>`).join("");
+    const line = smooth(pts, T, Hh - B), stroke = s.color === "grad" ? `url(#${gradId}h)` : s.color;
+    if (s.area && pts.length > 1) g += `<path class="${animate ? "fade" : ""}" d="${line} L${pts.at(-1)[0]},${y(0)} L${pts[0][0]},${y(0)} Z" fill="url(#${gradId}h)" mask="url(#${gradId}m)"/>`;
+    g += `<path class="${animate ? "draw" : ""}" pathLength="1" d="${line}" fill="none" stroke="${stroke}" stroke-width="2.5" stroke-linecap="round" filter="url(#${gradId}g)"/>`;
+    if (s.dots || pts.length < 2) g += pts.map(p => `<circle class="${animate ? "fade" : ""}" cx="${p[0]}" cy="${p[1]}" r="3" fill="${s.color === "grad" ? "#fff" : s.color}" stroke="#141a30" stroke-width="2"/>`).join("");
   }
-  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-  svg.innerHTML = `<defs><linearGradient id="gArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2fc6d4" stop-opacity=".45"/><stop offset="1" stop-color="#2fc6d4" stop-opacity="0"/></linearGradient></defs>` + g;
+  g += `<g id="${gradId}x" style="display:none"><line y1="${T}" y2="${Hh - B}" stroke="rgba(255,255,255,.35)" stroke-dasharray="2 3"/>${series.map(s => `<circle r="5" fill="${s.color === "grad" ? "#fff" : s.color}" stroke="#141a30" stroke-width="2"/>`).join("")}</g>`;
+  g += `<rect class="hov" x="${L}" y="0" width="${W - L - R}" height="${Hh}" fill="transparent"/>`;
+  svg.setAttribute("viewBox", `0 0 ${W} ${Hh}`);
+  svg.innerHTML = g;
+  svg._c = { x, y, n, series, tipFn, L, R, W, gradId };
+  if (!svg._hooked) {
+    svg._hooked = true;
+    const move = e => {
+      const c = svg._c, r = svg.getBoundingClientRect();
+      const px = (e.clientX - r.left) * (c.W / r.width);
+      const d = Math.min(c.n, Math.max(1, Math.round(((px - c.L) / (c.W - c.L - c.R)) * (c.n - 1)) + 1));
+      const grp = svg.querySelector(`#${c.gradId}x`); if (!grp) return;
+      grp.style.display = ""; grp.querySelector("line").setAttribute("x1", c.x(d)); grp.querySelector("line").setAttribute("x2", c.x(d));
+      grp.querySelectorAll("circle").forEach((ci, i) => {
+        const v = c.series[i].values[d - 1];
+        ci.style.display = v == null ? "none" : ""; if (v != null) { ci.setAttribute("cx", c.x(d)); ci.setAttribute("cy", c.y(v)); }
+      });
+      showTip(c.tipFn(d), e.clientX, e.clientY);
+    };
+    svg.addEventListener("pointermove", move);
+    svg.addEventListener("pointerdown", move);
+    svg.addEventListener("pointerleave", () => { const g = svg.querySelector(`#${svg._c.gradId}x`); if (g) g.style.display = "none"; hideTip(); });
+  }
 }
 
-function renderCharts() {
-  const n = dim(), m = month(), daily = dailyCounts();
-  const last = (Y === now.getFullYear() && M === now.getMonth()) ? now.getDate() : n;
-  const isFuture = Y > now.getFullYear() || (Y === now.getFullYear() && M > now.getMonth());
-  const vals = daily.map((c, i) => isFuture || i + 1 > last ? null : pct(c, HABITS.length));
-  chart($("dailyChart"), [{ values: vals, color: "#2fc6d4", fill: "gArea" }], 100, [0, 25, 50, 75, 100], "%");
-  const series = k => Array.from({ length: n }, (_, i) => m[k][i + 1] ? +m[k][i + 1] : null);
-  chart($("moodChart"), [
-    { values: series("mood"), color: "#c9cfe8", dots: true },
-    { values: series("motiv"), color: "#6c8cff", dots: true },
-  ], 10, [0, 2, 4, 6, 8, 10], "");
+// ---------- charts ----------
+function renderCharts(animate) {
+  const n = dim(), m = monthOf(), daily = dailyCounts(), el = elapsed();
+  const vals = daily.map((c, i) => i + 1 > el ? null : pct(c, H));
+  const valid = vals.filter(v => v != null);
+  $("avgTag").textContent = "ort. " + fmt(valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : 0);
+  lineChart($("dailyChart"), {
+    series: [{ values: vals, color: "grad", area: true }], max: 100, ticks: [0, 25, 50, 75, 100], suffix: "%", animate, gradId: "dc",
+    tipFn: d => `<div class="tt">${d} ${MONTHS[M]} · ${DAYS_FULL[new Date(Y, M, d).getDay()]}</div>` + (vals[d - 1] == null ? "Henüz gelmedi" : `<b>%${vals[d - 1].toFixed(0)}</b> · ${daily[d - 1]}/${H} aktivite`),
+  });
+  const ser = k => Array.from({ length: n }, (_, i) => m[k][i + 1] ? +m[k][i + 1] : null);
+  const mood = ser("mood"), motiv = ser("motiv");
+  lineChart($("moodChart"), {
+    series: [{ values: mood, color: css("--mood"), dots: true }, { values: motiv, color: css("--motiv"), dots: true }],
+    max: 10, ticks: [0, 2, 4, 6, 8, 10], suffix: "", animate, gradId: "mc",
+    tipFn: d => `<div class="tt">${d} ${MONTHS[M]}</div><div class="tr"><i style="background:var(--mood)"></i>Ruh hali: <b>${mood[d - 1] ?? "–"}</b></div><div class="tr"><i style="background:var(--motiv)"></i>Motivasyon: <b>${motiv[d - 1] ?? "–"}</b></div>`,
+  });
+  weekChart(daily, el, animate);
+  radarChart(m, el, animate);
+  dowChart(daily, el, animate);
 }
 
+function weekChart(daily, el, animate) {
+  const svg = $("weekChart"), [W, Hh] = size(svg), n = dim(), weeks = Math.ceil(n / 7);
+  const L = 30, R = 6, T = 22, B = 26, y = v => T + (1 - v / 100) * (Hh - T - B);
+  const slot = (W - L - R) / weeks, bw = Math.min(46, slot * .55);
+  let g = "";
+  for (const t of [0, 50, 100]) g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="rgba(140,150,210,.12)"/><text x="${L - 6}" y="${y(t) + 3}" fill="#5b6488" font-size="10" text-anchor="end">${t}%</text>`;
+  const res = [];
+  for (let w = 0; w < weeks; w++) {
+    const a = w * 7 + 1, b = Math.min(n, w * 7 + 7), upto = Math.min(b, el), days = Math.max(0, upto - a + 1);
+    const done = daily.slice(a - 1, upto).reduce((s, c) => s + c, 0), p = pct(done, days * H);
+    res.push({ w, p, days });
+    const cx = L + slot * (w + .5), top = y(p), h = Math.max(0, y(0) - top), c = WEEK_COLORS[w];
+    g += `<defs><linearGradient id="wg${w}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="${c}" stop-opacity=".25"/></linearGradient></defs>`;
+    g += `<rect x="${cx - bw / 2}" y="${T}" width="${bw}" height="${y(0) - T}" rx="6" fill="rgba(255,255,255,.03)"/>`;
+    if (h > 0) g += `<path class="${animate ? "grow" : ""}" style="--i:${w}" d="M${cx - bw / 2},${y(0)} V${top + 6} Q${cx - bw / 2},${top} ${cx - bw / 2 + 6},${top} H${cx + bw / 2 - 6} Q${cx + bw / 2},${top} ${cx + bw / 2},${top + 6} V${y(0)} Z" fill="url(#wg${w})"/>`;
+    g += `<text x="${cx}" y="${(days ? top : y(0)) - 7}" fill="#eef0fa" font-size="11" font-weight="700" text-anchor="middle">${days ? fmt(p) : "–"}</text>`;
+    g += `<text x="${cx}" y="${Hh - 8}" fill="#8f98bb" font-size="10" text-anchor="middle">H${w + 1}</text>`;
+    g += `<rect x="${cx - slot / 2}" y="0" width="${slot}" height="${Hh}" fill="transparent" data-tip="<div class='tt'>Hafta ${w + 1} · ${a}–${b} ${MONTHS[M]}</div>${days ? `<b>%${p.toFixed(1)}</b> · ${done}/${days * H} tik` : "Henüz başlamadı"}"/>`;
+  }
+  svg.setAttribute("viewBox", `0 0 ${W} ${Hh}`); svg.innerHTML = g;
+  const act = res.filter(r => r.days);
+  if (act.length >= 2) {
+    const last = act.at(-1), prev = act.at(-2), diff = last.p - prev.p;
+    $("weekNote").innerHTML = `Hafta ${last.w + 1}, önceki haftaya göre <b style="color:${diff >= 0 ? "var(--w5)" : "var(--lo)"}">${diff >= 0 ? "▲" : "▼"} ${Math.abs(diff).toFixed(1)} puan</b>`;
+  } else $("weekNote").textContent = act.length ? `Hafta 1: ${fmt(act[0].p)}` : "Bu ay için henüz veri yok.";
+}
+
+function radarChart(m, el, animate) {
+  const svg = $("radarChart"), [W, Hh] = size(svg), cx = W / 2, cy = Hh / 2 + 2, r = Math.min(W, Hh) / 2 - 30;
+  const ang = i => -Math.PI / 2 + (i / H) * Math.PI * 2;
+  const pt = (i, v) => [cx + Math.cos(ang(i)) * r * v / 100, cy + Math.sin(ang(i)) * r * v / 100];
+  const vals = HABITS.map(h => pct((m.checks[h.id] || []).filter(d => d <= el).length, el));
+  let g = `<defs><radialGradient id="rg"><stop offset="0" stop-color="#22c7d6" stop-opacity=".55"/><stop offset="1" stop-color="#7c6cff" stop-opacity=".35"/></radialGradient>
+    <linearGradient id="rs" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c6cff"/><stop offset=".5" stop-color="#22c7d6"/><stop offset="1" stop-color="#ff5fa2"/></linearGradient></defs>`;
+  for (const lv of [25, 50, 75, 100]) g += `<polygon points="${HABITS.map((_, i) => pt(i, lv).join(",")).join(" ")}" fill="none" stroke="rgba(140,150,210,${lv === 100 ? .22 : .1})"/>`;
+  HABITS.forEach((h, i) => {
+    const [ex, ey] = pt(i, 100), [lx, ly] = pt(i, 118);
+    g += `<line x1="${cx}" y1="${cy}" x2="${ex}" y2="${ey}" stroke="rgba(140,150,210,.1)"/>`;
+    g += `<text x="${lx}" y="${ly + 5}" font-size="15" text-anchor="middle">${h.icon}</text>`;
+  });
+  g += `<polygon class="${animate ? "radar-poly" : ""}" points="${vals.map((v, i) => pt(i, Math.max(v, 2)).join(",")).join(" ")}" fill="url(#rg)" stroke="url(#rs)" stroke-width="2" stroke-linejoin="round" style="filter:drop-shadow(0 0 8px rgba(124,108,255,.6))"/>`;
+  vals.forEach((v, i) => {
+    const [px, py] = pt(i, Math.max(v, 2)), h = HABITS[i];
+    g += `<circle cx="${px}" cy="${py}" r="3.5" fill="${h.color}" stroke="#141a30" stroke-width="2"/>`;
+    g += `<circle cx="${px}" cy="${py}" r="14" fill="transparent" data-tip="<div class='tt'>${h.icon} ${esc(h.name)}</div><b>%${v.toFixed(1)}</b>"/>`;
+  });
+  svg.setAttribute("viewBox", `0 0 ${W} ${Hh}`); svg.innerHTML = g;
+  if (!el || Math.max(...vals) === 0) { $("radarNote").textContent = "Henüz veri yok. Bugün başla!"; return; }
+  const order = HABITS.map((h, i) => [h, vals[i]]).sort((a, b) => b[1] - a[1]);
+  $("radarNote").innerHTML = `En güçlü: <b>${order[0][0].icon} ${esc(order[0][0].name)}</b> · Gelişmeli: <b>${order.at(-1)[0].icon} ${esc(order.at(-1)[0].name)}</b>`;
+}
+
+function dowChart(daily, el, animate) {
+  const svg = $("dowChart"), [W, Hh] = size(svg);
+  const order = [1, 2, 3, 4, 5, 6, 0], sum = Array(7).fill(0), cnt = Array(7).fill(0);
+  for (let d = 1; d <= el; d++) { const wd = new Date(Y, M, d).getDay(); sum[wd] += pct(daily[d - 1], H); cnt[wd]++; }
+  const avg = order.map(wd => cnt[wd] ? sum[wd] / cnt[wd] : null);
+  const L = 30, R = 6, T = 22, B = 26, y = v => T + (1 - v / 100) * (Hh - T - B);
+  const slot = (W - L - R) / 7, bw = Math.min(28, slot * .5);
+  const best = avg.reduce((bi, v, i) => v && (bi < 0 || v > avg[bi]) ? i : bi, -1);
+  let g = `<defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22c7d6"/><stop offset="1" stop-color="#22c7d6" stop-opacity=".2"/></linearGradient>
+    <linearGradient id="dgb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7c948"/><stop offset="1" stop-color="#f59342" stop-opacity=".3"/></linearGradient></defs>`;
+  for (const t of [0, 50, 100]) g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="rgba(140,150,210,.12)"/><text x="${L - 6}" y="${y(t) + 3}" fill="#5b6488" font-size="10" text-anchor="end">${t}%</text>`;
+  avg.forEach((v, i) => {
+    const cx = L + slot * (i + .5), top = y(v ?? 0), h = y(0) - top;
+    g += `<rect x="${cx - bw / 2}" y="${T}" width="${bw}" height="${y(0) - T}" rx="5" fill="rgba(255,255,255,.03)"/>`;
+    if (v != null && h > 0) g += `<path class="${animate ? "grow" : ""}" style="--i:${i}" d="M${cx - bw / 2},${y(0)} V${top + 5} Q${cx - bw / 2},${top} ${cx - bw / 2 + 5},${top} H${cx + bw / 2 - 5} Q${cx + bw / 2},${top} ${cx + bw / 2},${top + 5} V${y(0)} Z" fill="url(#${i === best ? "dgb" : "dg"})"/>`;
+    if (i === best) g += `<text x="${cx}" y="${top - 7}" fill="#eef0fa" font-size="11" font-weight="700" text-anchor="middle">${fmt(v)}</text>`;
+    g += `<text x="${cx}" y="${Hh - 8}" fill="${i === best ? "#f7c948" : "#8f98bb"}" font-size="10" text-anchor="middle">${DAYS[order[i]]}</text>`;
+    g += `<rect x="${cx - slot / 2}" y="0" width="${slot}" height="${Hh}" fill="transparent" data-tip="<div class='tt'>${DAYS_FULL[order[i]]} (${cnt[order[i]]} gün)</div>${v == null ? "Veri yok" : `Ortalama <b>%${v.toFixed(1)}</b>`}"/>`;
+  });
+  svg.setAttribute("viewBox", `0 0 ${W} ${Hh}`); svg.innerHTML = g;
+  $("dowNote").innerHTML = best >= 0 ? `En verimli gün: <b>${DAYS_FULL[order[best]]}</b>` : "Bu ay için henüz veri yok.";
+}
+
+// ---------- heatmap ----------
+function renderHeat() {
+  const end = new Date(TY, TM, TD), offset = (end.getDay() + 6) % 7;
+  const start = new Date(TY, TM, TD - offset - 25 * 7);
+  let cells = "", months = "", lastM = -1, i = 0, active = 0, total = 0;
+  for (let w = 0; w < 26; w++) {
+    const first = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w * 7);
+    months += `<span>${first.getMonth() !== lastM ? MSHORT[first.getMonth()] : ""}</span>`; lastM = first.getMonth();
+    for (let r = 0; r < 7; r++) {
+      const dt = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w * 7 + r);
+      const fut = dt > end, c = fut ? 0 : countOn(dt.getFullYear(), dt.getMonth(), dt.getDate()), p = pct(c, H);
+      const lv = fut ? "fut" : c === 0 ? "" : p < 25 ? "l1" : p < 50 ? "l2" : p < 85 ? "l3" : "l4";
+      const nowC = dt.getTime() === end.getTime() ? " now" : "";
+      if (!fut) { total++; if (c) active++; }
+      cells += `<div class="c ${lv}${nowC}" style="--i:${i++}"${fut ? "" : ` data-tip="<div class='tt'>${dt.getDate()} ${MONTHS[dt.getMonth()]} ${dt.getFullYear()} · ${DAYS_FULL[dt.getDay()]}</div><b>${c}/${H}</b> aktivite · %${p.toFixed(0)}"`}></div>`;
+    }
+  }
+  $("heatMonths").innerHTML = months; $("heat").innerHTML = cells;
+  $("heatTag").textContent = `${active}/${total} aktif gün`;
+  const sc = $("heatScroll"), cs = Math.max(12, Math.min(30, Math.floor((sc.clientWidth - 30) / 26) - 4));
+  sc.querySelector(".heat-wrap").style.setProperty("--cs", cs + "px");
+  sc.scrollLeft = sc.scrollWidth;
+}
+
+// ---------- badges ----------
+function renderBadges() {
+  const S = IDX.streak, maxBest = Math.max(...HABITS.map(h => S[h.id].best));
+  const tot = id => S[id]?.total || 0;
+  const list = [
+    ["👣", "İlk Adım", "İlk tik", IDX.total, 1],
+    ["💎", "Mükemmel Gün", "8/8 bir gün", IDX.perfect, 1],
+    ["🔥", "Alev Serisi", "7 günlük seri", maxBest, 7],
+    ["⛓️", "Demir İrade", "21 günlük seri", maxBest, 21],
+    ["💯", "Yüzler Kulübü", "100 tik", IDX.total, 100],
+    ["💧", "Su Ustası", "20 gün 3L su", tot("su"), 20],
+    ["📚", "Kitap Kurdu", "20 gün okuma", tot("kitap"), 20],
+    ["💻", "Kod Makinesi", "20 gün yazılım", tot("yazilim"), 20],
+    ["📈", "Quant Beyin", "20 gün quant", tot("quant"), 20],
+    ["🏋️", "Çelik Vücut", "20 gün spor", tot("spor"), 20],
+    ["🥗", "Kalori Avcısı", "20 gün 1000 kcal", tot("kcal"), 20],
+    ["🎓", "Ders Canavarı", "20 gün ders", tot("ders"), 20],
+    ["🔒", "Gizli Görev", "20 gün LMX", tot("lmx"), 20],
+    ["👑", "Mükemmel Hafta", "7 mükemmel gün", IDX.perfect, 7],
+    ["🌌", "Efsane", "1000 tik", IDX.total, 1000],
+  ];
+  let got = 0;
+  $("badges").innerHTML = list.map(([ic, nm, desc, v, need]) => {
+    const ok = v >= need; if (ok) got++;
+    return `<div class="badge${ok ? " got" : ""}" data-tip="<div class='tt'>${nm}</div>${desc} · ${Math.min(v, need)}/${need}"><span class="bi">${ic}</span><b>${nm}</b><span>${desc}</span><div class="bp"><i style="width:${pct(Math.min(v, need), need)}%"></i></div></div>`;
+  }).join("");
+  $("badgeTag").textContent = `${got}/${list.length}`;
+}
+
+// ---------- render orchestration ----------
 function scrollToToday() {
-  document.querySelectorAll(".scroll").forEach(sc => {
+  document.querySelectorAll(".card .scroll").forEach(sc => {
     const t = sc.querySelector(".dd th.today");
-    sc.scrollLeft = t ? Math.max(0, t.offsetLeft - sc.clientWidth / 2) : 0;
+    if (t) sc.scrollLeft = Math.max(0, t.offsetLeft - sc.clientWidth / 2); else if (sc.id !== "heatScroll") sc.scrollLeft = 0;
   });
 }
-function renderAll() { renderHabitGrid(); renderMoodGrid(); renderStats(); renderCharts(); scrollToToday(); }
-function refresh() { renderHabitGrid(); renderStats(); renderCharts(); }
+function renderAll(animate = true) {
+  buildIndex(); renderHeader(); renderToday(); renderHabitGrid(); renderMoodGrid(); renderAnalysis(); renderCharts(animate); renderHeat(); renderBadges(); scrollToToday();
+}
+function refresh() { renderHeader(); renderToday(); renderHabitGrid(); renderAnalysis(); renderCharts(false); renderBadges(); renderHeat(); }
 
+// ---------- events ----------
 $("habitGrid").addEventListener("click", e => {
-  const b = e.target.closest(".cb"); if (!b) return;
-  const m = month(), h = b.dataset.h, d = +b.dataset.d;
-  const set = new Set(m.checks[h] || []);
-  set.has(d) ? set.delete(d) : set.add(d);
-  m.checks[h] = [...set].sort((a, b) => a - b);
-  save(); refresh();
+  const b = e.target.closest(".cb"); if (!b || b.disabled) return;
+  const h = b.dataset.h, d = +b.dataset.d;
+  toggle(Y, M, h, d, b, WEEK_COLORS[weekOf(d)]);
+  refresh();
+  $("habitGrid").querySelector(`.cb[data-h="${h}"][data-d="${d}"]`)?.classList.add("pop");
+});
+$("tiles").addEventListener("click", e => {
+  const t = e.target.closest(".tile"); if (!t) return;
+  const h = HABITS.find(x => x.id === t.dataset.h);
+  toggle(TY, TM, h.id, TD, t.querySelector(".chk"), h.color);
+  refresh();
+  $("tiles").querySelector(`.tile[data-h="${h.id}"]`)?.classList.add("flash");
 });
 $("moodGrid").addEventListener("change", e => {
   const s = e.target.closest("select"); if (!s) return;
-  const m = month();
+  const m = monthOf();
   if (s.value) m[s.dataset.k][s.dataset.d] = +s.value; else delete m[s.dataset.k][s.dataset.d];
   s.classList.toggle("empty", !s.value);
-  save(); renderStats(); renderCharts();
+  save(); renderAnalysis(); renderCharts(false);
 });
-$("prev").onclick = () => { if (--M < 0) { M = 11; Y--; } renderAll(); };
-$("next").onclick = () => { if (++M > 11) { M = 0; Y++; } renderAll(); };
+function shift(dir) {
+  M += dir; if (M < 0) { M = 11; Y--; } if (M > 11) { M = 0; Y++; }
+  renderAll(true);
+}
+$("prev").onclick = () => shift(-1);
+$("next").onclick = () => shift(1);
+document.addEventListener("keydown", e => { if (e.target.closest("select,input")) return; if (e.key === "ArrowLeft") shift(-1); if (e.key === "ArrowRight") shift(1); });
 
 $("exp").onclick = () => {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([JSON.stringify(store, null, 2)], { type: "application/json" }));
   a.download = `aliskanlik-yedek-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click(); URL.revokeObjectURL(a.href);
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
 $("imp").onclick = () => $("impFile").click();
 $("impFile").onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   try {
     const data = JSON.parse(await f.text());
-    if (typeof data !== "object" || Array.isArray(data)) throw 0;
-    store = data; save(); renderAll();
-  } catch { alert("Yedek dosyası okunamadı."); }
+    if (typeof data !== "object" || !data || Array.isArray(data)) throw 0;
+    store = data; save(); renderAll(true); toast("✅ Yedek yüklendi");
+  } catch { toast("⚠️ Yedek dosyası okunamadı"); }
   e.target.value = "";
 };
 
-let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderCharts, 120); });
-renderAll();
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { renderCharts(false); renderHeat(); }, 150); });
+
+// reveal on scroll
+const reveals = document.querySelectorAll(".reveal");
+if ("IntersectionObserver" in window) {
+  const io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } }), { threshold: .08 });
+  reveals.forEach(r => io.observe(r));
+  setTimeout(() => reveals.forEach(r => r.classList.add("in")), 4000);
+} else reveals.forEach(r => r.classList.add("in"));
+
+renderAll(true);
 </script>
 </body>
 </html>
